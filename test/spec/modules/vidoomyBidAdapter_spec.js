@@ -1,14 +1,16 @@
-import { expect } from 'chai';
-import { spec } from 'modules/vidoomyBidAdapter.js';
-import { newBidder } from 'src/adapters/bidderFactory.js';
-import { INSTREAM } from '../../../src/video';
+import {expect} from 'chai';
+import {spec} from 'modules/vidoomyBidAdapter.js';
+import {newBidder} from 'src/adapters/bidderFactory.js';
+import {INSTREAM} from '../../../src/video';
 
 const ENDPOINT = `https://d.vidoomy.com/api/rtbserver/prebid/`;
 const PIXELS = ['/test.png', '/test2.png?gdpr={{GDPR}}&gdpr_consent={{GDPR_CONSENT}}']
 
-describe('vidoomyBidAdapter', function() {
+describe('vidoomyBidAdapter', function () {
   const adapter = newBidder(spec);
-
+  const displayBidRequestParams = {
+    sizes: [[300, 250], [300, 600]]
+  }
   describe('isBidRequestValid', function () {
     let bid;
     beforeEach(() => {
@@ -161,6 +163,70 @@ describe('vidoomyBidAdapter', function() {
       expect(request[0].data).to.include.any.keys('schain');
       expect(request[0].data.schain).to.eq(serializedForm);
     });
+
+    describe('badv, bcat, bapp, btype, battr', function () {
+      const bidderRequestNew = {
+        ...bidderRequest,
+        bcat: ['EX1', 'EX2', 'EX3'],
+        badv: ['site.com'],
+        bapp: ['app.com'],
+        btype: [1, 2, 3],
+        battr: [1, 2, 3]
+      }
+      const request = spec.buildRequests(bidRequests, bidderRequestNew);
+      it('should have badv, bcat, bapp, btype, battr in request', function () {
+        expect(request[0].data).to.include.any.keys('badv');
+        expect(request[0].data).to.include.any.keys('bcat');
+        expect(request[0].data).to.include.any.keys('bapp');
+        expect(request[0].data).to.include.any.keys('btype');
+        expect(request[0].data).to.include.any.keys('battr');
+      })
+
+      it('should have badv, bcat, bapp, btype, battr in request', function () {
+        expect(request[0].badv).to.deep.equal(bidderRequest.refererInfo.badv);
+        expect(request[0].bcat).to.deep.equal(bidderRequest.refererInfo.bcat);
+        expect(request[0].bapp).to.deep.equal(bidderRequest.refererInfo.bapp);
+        expect(request[0].btype).to.deep.equal(bidderRequest.refererInfo.btype);
+        expect(request[0].battr).to.deep.equal(bidderRequest.refererInfo.battr);
+      })
+
+      it('should have badv, bcat, bapp, btype, battr in request', function () {
+        expect(request[0].badv).to.deep.equal(bidderRequest.refererInfo.badv);
+        expect(request[0].bcat).to.deep.equal(bidderRequest.refererInfo.bcat);
+        expect(request[0].bapp).to.deep.equal(bidderRequest.refererInfo.bapp);
+        expect(request[0].btype).to.deep.equal(bidderRequest.refererInfo.btype);
+        expect(request[0].battr).to.deep.equal(bidderRequest.refererInfo.battr);
+      })
+    })
+
+    describe('first party data', function () {
+      const bidderRequest2 = {
+        ...bidderRequest,
+        ortb2: {
+          bcat: ['EX1', 'EX2', 'EX3'],
+          badv: ['site.com'],
+          bapp: ['app.com'],
+          btype: [1, 2, 3],
+          battr: [1, 2, 3]
+        }
+      }
+      const request = spec.buildRequests(bidRequests, bidderRequest2);
+
+      it('should have badv, bcat, bapp, btype, battr in request', function () {
+        expect(request[0].data).to.include.any.keys('badv');
+        expect(request[0].data).to.include.any.keys('bcat');
+        expect(request[0].data).to.include.any.keys('bapp');
+        expect(request[0].data).to.include.any.keys('btype');
+        expect(request[0].data).to.include.any.keys('battr');
+      })
+      it('should parse first party data', function () {
+        expect(request[0].data.bcat).to.deep.equal(bidderRequest2.ortb2.bcat)
+        expect(request[0].data.badv).to.deep.equal(bidderRequest2.ortb2.badv)
+        expect(request[0].data.bapp).to.deep.equal(bidderRequest2.ortb2.bapp);
+        expect(request[0].data.btype).to.deep.equal(bidderRequest2.ortb2.btype);
+        expect(request[0].data.battr).to.deep.equal(bidderRequest2.ortb2.battr);
+      });
+    });
   });
 
   describe('interpretResponse', function () {
@@ -253,7 +319,7 @@ describe('vidoomyBidAdapter', function() {
       const GDPR_CONSENT = 'GDPR_TEST'
       const result = spec.getUserSyncs({
         pixelEnabled: true
-      }, [serverResponseBanner], { consentString: GDPR_CONSENT, gdprApplies: 1 }, null)
+      }, [serverResponseBanner], {consentString: GDPR_CONSENT, gdprApplies: 1}, null)
       expect(result).to.eql([
         {
           type: 'image',
